@@ -13,6 +13,8 @@ from mediapipe.python.solutions import hands as mpHands
 
 
 class Hand(IntEnum):
+    """손가락의 키포인트 인덱스를 정의한다."""
+
     WRIST = 0
     THUMB_CMC = 1
     THUMB_MCP = 2
@@ -37,6 +39,8 @@ class Hand(IntEnum):
 
 
 class Detector:
+    """비전 기반 손 제스처 인식을 위한 클래스"""
+
     model: keras.Model
     hands: mpHands.Hands
     cap: cv2.VideoCapture
@@ -88,6 +92,7 @@ class Detector:
 
     @cached_property
     def gesture_names(self) -> List[str]:
+        """사용 가능한 제스처 이름을 반환한다."""
         # Load class names
         with open("gesture.names", "r") as f:
             class_names = f.read().split("\n")
@@ -97,22 +102,26 @@ class Detector:
 
     @property
     def frame(self) -> np.ndarray:
+        """웹캠에서 1프레임을 읽어온다."""
         _, frame = self.cap.read()
         assert frame is not None, "No image found"
         return cv2.flip(frame, 1)
 
     @cached_property
     def xyc(self) -> Tuple[int, int, int]:
+        """프레임의 크기를 반환한다. e.g. (width, height, channels)"""
         x, y, c = self.frame.shape
         return x, y, c
 
     def detect_hand_keypoints(
         self, stream: bool = False, show: bool = True
     ) -> None:
+        """실시간으로 손과 손가락의 키포인트를 인식한다.
+        그리고 인식된 제스처에 따라 콜백 함수를 호출한다."""
         x, y, _ = self.xyc
         hand_connections = list(mpHands.HAND_CONNECTIONS)
 
-        # Dictionary for gesture callbacks
+        # 제스처 이름과 콜백 함수를 매핑한 딕셔너리
         gesture_callbacks = {
             "peace": self.peace_callback,
             "okay": self.ok_callback,
@@ -121,21 +130,32 @@ class Detector:
             "stop": self.stop_callback,
         }
 
+        # 메인 루프
         while True:
+            # 프레임을 읽어온다.
             frame_bgr = self.frame
+
+            # 손의 랜드마크를 인식한다.
             hand_landmarks = self.hands.process(
                 cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
             ).multi_hand_landmarks  # type: ignore
 
+            # 각 손에 대해 랜드마크를 인식한다. (손이 여러 개일 수 있다.)
             for hand_idx, hand_landmark in enumerate(hand_landmarks or []):
+                # 랜드마크들의 좌표를 리스트로 변환한다. (x, y) 형태로 저장된다.
                 landmarks = [
                     int(coord)
                     for lm in hand_landmark.landmark
                     for coord in (lm.x * x, lm.y * y)
                 ]
+
+                # 손의 랜드마크를 모델에 입력하여 제스처를 예측한다.
                 prediction = self.model.predict(
                     np.array(landmarks).reshape(-1, 21, 2), verbose=0  # type: ignore  # noqa: E501
                 )
+
+                # 만약 예측된 제스처가 허용된 제스처 중 하나이면서 제스처의
+                # 확률이 confidence_threshold보다 크면 제스처 이름을 얻는다.
                 if (
                     np.max(prediction[hand_idx][self.allowed_indices])
                     >= self.confidence_threshold
@@ -148,9 +168,12 @@ class Detector:
                             )
                         ]
                     ]
+                # 그렇지 않으면 빈 문자열을 얻는다.
                 else:
                     class_name = ""
 
+                # 만약 show가 True이면 손의 랜드마크와 제스처 이름을 화면에
+                # 표시한다.
                 if show:
                     mpDraw.draw_landmarks(
                         frame_bgr, hand_landmark, hand_connections
@@ -166,10 +189,11 @@ class Detector:
                         cv2.LINE_AA,
                     )
 
-                # Use the callback from the dictionary
+                # gesture_callbacks에 제스처 이름이 있으면 콜백 함수를 호출한다.
                 if class_name in gesture_callbacks:
                     gesture_callbacks[class_name](frame_bgr, landmarks)
 
+            # 루프의 마지막 부분
             if show:
                 cv2.imshow("Output", frame_bgr)
             if stream:
@@ -179,12 +203,14 @@ class Detector:
                 cv2.waitKey(0)
                 break
 
+        # 루프가 종료되면 웹캠을 해제한다.
         cv2.destroyAllWindows()
         self.cap.release()
 
     def get_x_y_of_finger(
         self, landmarks: List[int], finger_id: int
     ) -> Tuple[int, int]:
+        """손가락의 x, y 좌표를 반환한다."""
         x, y, _ = self.xyc
         return (
             int(landmarks[finger_id * 2] * y / x),
@@ -194,11 +220,13 @@ class Detector:
     def peace_callback(
         self, frame: np.ndarray, landmarks: List[int]
     ) -> None:
+        """Peace 제스처가 인식되었을 때의 콜백 함수"""
         for finger_id in (Hand.INDEX_TIP, Hand.MIDDLE_TIP):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
 
     def ok_callback(self, frame: np.ndarray, landmarks: List[int]) -> None:
+        """Okay 제스처가 인식되었을 때의 콜백 함수"""
         for finger_id in (Hand.INDEX_TIP, Hand.THUMB_TIP):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
@@ -206,6 +234,7 @@ class Detector:
     def thumbs_up_callback(
         self, frame: np.ndarray, landmarks: List[int]
     ) -> None:
+        """Thumbs up 제스처가 인식되었을 때의 콜백 함수"""
         for finger_id in (Hand.THUMB_TIP,):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
@@ -213,11 +242,13 @@ class Detector:
     def thumbs_down_callback(
         self, frame: np.ndarray, landmarks: List[int]
     ) -> None:
+        """Thumbs down 제스처가 인식되었을 때의 콜백 함수"""
         for finger_id in (Hand.THUMB_TIP,):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
 
     def stop_callback(self, frame: np.ndarray, landmarks: List[int]) -> None:
+        """Stop 제스처가 인식되었을 때의 콜백 함수"""
         for finger_id in (
             Hand.THUMB_TIP,
             Hand.INDEX_TIP,
@@ -230,10 +261,11 @@ class Detector:
 
 
 if __name__ == "__main__":
+    # 인식기 초기화
     detector = Detector(
-        confidence_threshold=0.3,
-        max_num_hands=1,
-        allowed_gestures={
+        confidence_threshold=0.3,  # 이 값보다 큰 제스처만 인식한다.
+        max_num_hands=1,  # 인식할 손의 개수
+        allowed_gestures={  # 인식할 제스쳐들. 이외의 제스쳐는 무시한다.
             "okay",
             "peace",
             "thumbs up",
@@ -246,25 +278,6 @@ if __name__ == "__main__":
             # "smile",
         },
     )
+
+    # 인식 시작
     detector.detect_hand_keypoints(stream=True, show=False)
-
-    # def get_one_frame(self) -> np.ndarray:
-    #     cap = self.cap
-    #     try:
-    #         while True:
-    #             # Read each frame from the webcam
-    #             _, frame = cap.read()
-    #             self.width, self.height, self.channels = frame.shape
-    #             assert frame is not None, "No image found"
-
-    #             # Flip the frame vertically
-    #             frame = cv2.flip(frame, 1)
-    #             # Show the final output
-    #             cv2.imshow("Output", frame)
-    #             if cv2.waitKey(1) == ord("q"):
-    #                 break
-    #     finally:
-    #         # release the webcam and destroy all active windows
-    #         cap.release()
-    #         cv2.destroyAllWindows()
-    #     return frame
