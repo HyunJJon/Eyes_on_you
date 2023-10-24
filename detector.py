@@ -11,6 +11,8 @@ from keras.models import load_model
 from mediapipe.python.solutions import drawing_utils as mpDraw
 from mediapipe.python.solutions import hands as mpHands
 
+from arduino_control import ArduinoController
+
 
 class Hand(IntEnum):
     """손가락의 키포인트 인덱스를 정의한다."""
@@ -65,6 +67,7 @@ class Detector:
     ):
         # Load the gesture recognizer model
         self.model = load_model(model_name)  # type: ignore
+        self.controller = ArduinoController()
 
         # initialize mediapipe hands for hand gesture recognition project
         self.hands = mpHands.Hands(
@@ -238,6 +241,7 @@ class Detector:
         for finger_id in (Hand.THUMB_TIP,):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
+
 
     def thumbs_down_callback(
         self, frame: np.ndarray, landmarks: List[int]
