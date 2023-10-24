@@ -242,7 +242,6 @@ class Detector:
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
 
-
     def thumbs_down_callback(
         self, frame: np.ndarray, landmarks: List[int]
     ) -> None:
@@ -250,6 +249,7 @@ class Detector:
         for finger_id in (Hand.THUMB_TIP,):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
+            self.controller.send_x_y(finger_x, finger_y)
 
     def stop_callback(self, frame: np.ndarray, landmarks: List[int]) -> None:
         """Stop 제스처가 인식되었을 때의 콜백 함수"""

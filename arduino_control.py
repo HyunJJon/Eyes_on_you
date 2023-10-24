@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 import serial
 import time
 
 
+@dataclass
 class ArduinoController:
     width: float = 960
     height: float = 720
@@ -9,7 +11,7 @@ class ArduinoController:
     baudrate: int = 9600
     port: str = "COM3"
 
-    def __init__(self) -> None:
+    def __post_init__(self) -> None:
         self.ser = serial.Serial(self.port, self.baudrate)
         time.sleep(2)
 
