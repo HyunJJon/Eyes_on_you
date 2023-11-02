@@ -57,7 +57,7 @@ class Detector:
             "peace",
             "call me",
         },
-        cam_id: int = 0,
+        cam_id: int = 1,
         static_image_mode: bool = False,
         max_num_hands: int = 1,
         model_complexity: int = 1,
@@ -67,7 +67,8 @@ class Detector:
     ):
         # Load the gesture recognizer model
         self.model = load_model(model_name)  # type: ignore
-        self.controller = ArduinoController()
+        x, y, _ = self.xyc
+        self.controller = ArduinoController(width=x, height=y)
 
         # initialize mediapipe hands for hand gesture recognition project
         self.hands = mpHands.Hands(
@@ -226,6 +227,7 @@ class Detector:
         """Peace 제스처가 인식되었을 때의 콜백 함수"""
         for finger_id in (Hand.INDEX_TIP, Hand.MIDDLE_TIP):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
+            self.controller.send_x_y(finger_x, finger_y)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
 
     def ok_callback(self, frame: np.ndarray, landmarks: List[int]) -> None:
@@ -267,6 +269,7 @@ class Detector:
 if __name__ == "__main__":
     # 인식기 초기화
     detector = Detector(
+        cam_id=0,
         confidence_threshold=0.3,  # 이 값보다 큰 제스처만 인식한다.
         max_num_hands=1,  # 인식할 손의 개수
         allowed_gestures={  # 인식할 제스쳐들. 이외의 제스쳐는 무시한다.
@@ -284,4 +287,4 @@ if __name__ == "__main__":
     )
 
     # 인식 시작
-    detector.detect_hand_keypoints(stream=True, show=False)
+    detector.detect_hand_keypoints(stream=True, show=True)
