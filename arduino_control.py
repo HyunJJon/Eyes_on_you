@@ -31,8 +31,7 @@ class ArduinoController:
         encoded = "-2, -2".encode()
         self.ser.write(encoded)
 
-    def send_x_y(self, x: float, y: float, mode: float) -> None:
-        # 1: right, -1: left, 0: stop
+    def send_x_y(self, x: float, y: float, mode: int) -> None:
         if mode == 1:
             x_dir = x
             y_dir = y
