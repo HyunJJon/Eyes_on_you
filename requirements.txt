@@ -1,0 +1,8 @@
+cmake
+tensorflow
+pyserial
+scipy
+joblib
+opencv-python
+torch
+numpy
