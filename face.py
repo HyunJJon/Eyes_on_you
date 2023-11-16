@@ -1,3 +1,4 @@
+from typing import Callable, Tuple
 import numpy as np
 from face_detector import YoloDetector
 import cv2
@@ -8,7 +9,7 @@ from arduino_control import ArduinoController
 class FaceDetector:
     """비전 기반 얼굴 인식을 위한 클래스"""
 
-    def __init__(self, model: YoloDetector):
+    def __init__(self, model: Callable[[np.ndarray], Tuple]):
         self.model = model
         self.mode = 1
         self.skip_flag = False
@@ -18,7 +19,7 @@ class FaceDetector:
         height, width = frame.shape[:2]
 
         # Preprocess the frame for YOLOv5
-        bboxes, points = self.model.predict(frame)
+        bboxes, points = self.model(frame)
         for box in bboxes[0]:
             x, y, w, h = box
             center_x = int(width / 2)
@@ -83,15 +84,14 @@ class FaceDetector:
 
 
 if __name__ == "__main__":
-    detector = FaceDetector(
-        model=YoloDetector(
-            weights_name="yolov5n_state_dict.pt",
-            config_name="yolov5n.yaml",
-            target_size=480,
-            device="cpu",
-            min_face=10,
-        )
+    model = YoloDetector(
+        weights_name="yolov5n_state_dict.pt",
+        config_name="yolov5n.yaml",
+        target_size=480,
+        device="cpu",
+        min_face=10,
     )
+    detector = FaceDetector(model=model)
     # Open the video file
     cap = cv2.VideoCapture(4)  # Replace with the path to your video file
     controller = ArduinoController()

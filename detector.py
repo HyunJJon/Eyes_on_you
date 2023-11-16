@@ -3,7 +3,7 @@
 from enum import IntEnum
 from functools import cached_property
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 import cv2
 import keras
@@ -61,7 +61,7 @@ class Detector:
             min_face=10,
         ),
         hand_model_name: str = "mp_hand_gesture",
-        allowed_gestures: set[str] = {
+        allowed_gestures: Set[str] = {
             "stop",
             "thumbs up",
             "thumbs down",
