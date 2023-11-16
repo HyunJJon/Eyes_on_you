@@ -4,6 +4,7 @@ import torch
 import cv2
 import math
 from arduino_control import ArduinoController
+from face_detector import YoloDetector
 
 
 class FaceDetector:
@@ -71,14 +72,13 @@ class FaceDetector:
 
 
 if __name__ == "__main__":
-    model = torch.hub.load("ultralytics/yolov5", "yolov5s")
-    # model = YoloDetector(
-    #     weights_name="yolov5n_state_dict.pt",
-    #     config_name="yolov5n.yaml",
-    #     target_size=480,
-    #     device="cpu",
-    #     min_face=10,
-    # )
+    model = YoloDetector(
+        weights_name="yolov5n_state_dict.pt",
+        config_name="yolov5n.yaml",
+        target_size=480,
+        device="cpu",
+        min_face=10,
+    )
     detector = FaceDetector(model=model)
     # Open the video file
     cap = cv2.VideoCapture(1)  # Replace with the path to your video file
