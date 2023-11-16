@@ -32,6 +32,7 @@ class FaceDetector:
             direction_x = round((center_x - target_center_x) / distance)
             direction_y = round((target_center_y - center_y) / distance)
             cv2.rectangle(frame, (x, y), (w, h), (0, 255, 0), 2)
+            # if object is in between the two circles and mode is 1
             if self.mode == 1 and distance > 70:
                 cv2.circle(frame, (center_x, center_y), 10, (255, 0, 0), 1)
                 cv2.circle(
@@ -45,10 +46,12 @@ class FaceDetector:
                     self.skip_flag = False
                     continue
                 else:
-                    controller.send_x_y(direction_x, direction_y, self.mode)
+                    controller.send_x_y(direction_x, direction_y)
                     self.skip_flag = True
+            # if object gets closer to the inner circle, change mode
             elif self.mode == 1 and distance <= 70:
                 self.mode = 2
+            # if object is in between the two circles and mode is 2
             if self.mode == 2 and distance <= 90:
                 cv2.circle(frame, (center_x, center_y), 90, (255, 0, 0), 1)
                 cv2.circle(
@@ -58,6 +61,7 @@ class FaceDetector:
                     (0, 255, 0),
                     1,
                 )
+            # if object gets farther from the outer circle, change mode
             elif self.mode == 2 and distance > 70:
                 self.mode = 1
             print(
