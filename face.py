@@ -101,3 +101,9 @@ if __name__ == "__main__":
         if not ret:
             break
         detector.run(frame=frame, controller=controller)
+        cv2.imshow("Face Detection in Video", frame)
+        if cv2.waitKey(1) & 0xFF == 27:
+            controller.stop()
+            break
+    cap.release()
+    cv2.destroyAllWindows()

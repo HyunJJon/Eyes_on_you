@@ -2,6 +2,7 @@
 
 from enum import IntEnum
 from functools import cached_property
+from pathlib import Path
 from typing import List, Tuple
 
 import cv2
@@ -75,8 +76,12 @@ class Detector:
         min_detection_confidence: float = 0.5,
         min_tracking_confidence: float = 0.5,
     ):
+        # Initialize the webcam for Hand Gesture Recognition Python project
+        self.cap = cv2.VideoCapture(cam_id)
+        assert self.cap.isOpened(), "Cannot open webcam"
+
         # Load the gesture recognizer model
-        self.model = load_model(hand_model_name)  # type: ignore
+        self.model = load_model(Path(__file__).parent / hand_model_name)  # type: ignore
         x, y, _ = self.xyc
         self.controller = ArduinoController(width=x, height=y)
 
@@ -89,10 +94,6 @@ class Detector:
             min_tracking_confidence=min_tracking_confidence,
         )
         self.face_detector = FaceDetector(model=face_model)
-
-        # Initialize the webcam for Hand Gesture Recognition Python project
-        self.cap = cv2.VideoCapture(cam_id)
-        assert self.cap.isOpened(), "Cannot open webcam"
 
         # Convert allowed gestures to their corresponding indices
         self.allowed_indices = np.array(
