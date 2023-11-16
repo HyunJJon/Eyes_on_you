@@ -3,7 +3,7 @@
 from enum import IntEnum
 from functools import cached_property
 from pathlib import Path
-from typing import List, Set, Tuple
+from typing import Callable, List, Set, Tuple
 
 import cv2
 import keras
@@ -11,10 +11,10 @@ import numpy as np
 from keras.models import load_model
 from mediapipe.python.solutions import drawing_utils as mpDraw
 from mediapipe.python.solutions import hands as mpHands
+import torch
 
 from arduino_control import ArduinoController
 from face import FaceDetector
-from face_detector import YoloDetector
 
 
 class Hand(IntEnum):
@@ -53,13 +53,7 @@ class Detector:
 
     def __init__(
         self,
-        face_model: YoloDetector = YoloDetector(
-            weights_name="yolov5n_state_dict.pt",
-            config_name="yolov5n.yaml",
-            target_size=480,
-            device="cpu",
-            min_face=10,
-        ),
+        face_model: Callable[[np.ndarray], Tuple],
         hand_model_name: str = "mp_hand_gesture",
         allowed_gestures: Set[str] = {
             "stop",
@@ -283,6 +277,7 @@ if __name__ == "__main__":
     # 인식기 초기화
     detector = Detector(
         cam_id=0,
+        face_model=torch.hub.load("ultralytics/yolov5", "yolov5s"),
         confidence_threshold=0.3,  # 이 값보다 큰 제스처만 인식한다.
         max_num_hands=1,  # 인식할 손의 개수
         allowed_gestures={  # 인식할 제스쳐들. 이외의 제스쳐는 무시한다.

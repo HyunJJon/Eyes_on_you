@@ -1,6 +1,6 @@
 from typing import Callable, Tuple
 import numpy as np
-from face_detector import YoloDetector
+import torch
 import cv2
 import math
 from arduino_control import ArduinoController
@@ -68,38 +68,26 @@ class FaceDetector:
             print(
                 f"- Distance: {distance}, Direction_x: {direction_x}, Direction_y: {direction_y}), mode: {self.mode}"
             )
-        # print(f"Bounding Box Position: Top-Left ({x}, {y}), Bottom-Right ({x + w}, {y + h})")
-        # controller.send_x_y(x+w/2, y+h/2)
-
-        # Display the video with detected faces
-        # cv2.imshow("Face Detection in Video", frame)
-
-        # if cv2.waitKey(1) & 0xFF == 27:  # Press 'Esc' key to exit
-        #     controller.stop()
-        #     return
-
-        # # Release the video and close the OpenCV window
-        # cap.release()
-        # cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
-    model = YoloDetector(
-        weights_name="yolov5n_state_dict.pt",
-        config_name="yolov5n.yaml",
-        target_size=480,
-        device="cpu",
-        min_face=10,
-    )
+    model = torch.hub.load("ultralytics/yolov5", "yolov5s")
+    # model = YoloDetector(
+    #     weights_name="yolov5n_state_dict.pt",
+    #     config_name="yolov5n.yaml",
+    #     target_size=480,
+    #     device="cpu",
+    #     min_face=10,
+    # )
     detector = FaceDetector(model=model)
     # Open the video file
-    cap = cv2.VideoCapture(4)  # Replace with the path to your video file
+    cap = cv2.VideoCapture(1)  # Replace with the path to your video file
     controller = ArduinoController()
 
     while True:
         ret, frame = cap.read()
         if not ret:
-            break
+            raise ValueError("No frame!")
         detector.run(frame=frame, controller=controller)
         cv2.imshow("Face Detection in Video", frame)
         if cv2.waitKey(1) & 0xFF == 27:

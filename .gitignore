@@ -1,2 +1,3 @@
 /yolov*
 !/yolov5s.pt
+*.pyc
