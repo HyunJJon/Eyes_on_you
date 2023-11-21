@@ -6,3 +6,9 @@ joblib
 opencv-python
 torch
 numpy
+torchvision
+tqdm
+pyyaml
+pandas
+seaborn
+thop
