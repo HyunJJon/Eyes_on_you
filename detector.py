@@ -153,6 +153,8 @@ class Detector:
                 self.face_detector.run(frame_bgr, self.controller, "bracket")
             elif self.mode == "rail":
                 self.face_detector.run(frame_bgr, self.controller, "rail")
+            
+            self.controller.read()
 
             # 손의 랜드마크를 인식한다.
             hand_landmarks = self.hands.process(
@@ -217,6 +219,7 @@ class Detector:
                 cv2.imshow("Output", frame_rgb)
             if stream:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
+                    self.controller.reset()
                     break
             else:
                 cv2.waitKey(0)
@@ -286,7 +289,7 @@ class Detector:
 if __name__ == "__main__":
     # 인식기 초기화
     detector = Detector(
-        cam_id=0,
+        cam_id=4,
         confidence_threshold=0.3,  # 이 값보다 큰 제스처만 인식한다.
         max_num_hands=1,  # 인식할 손의 개수
         allowed_gestures={  # 인식할 제스쳐들. 이외의 제스쳐는 무시한다.

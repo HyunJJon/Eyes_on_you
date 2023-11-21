@@ -1,4 +1,5 @@
 #include <Servo.h>
+#define MAX_STEPS 100000
 
 // Constants
 const int BAUD_RATE = 9600;
@@ -7,8 +8,8 @@ const int SERVO_PIN_2 = 3;
 const int STEP_PIN = 9;
 const int DIR_PIN = 8;
 const int ENABLE_PIN = 10;
-const int MIN_STEP_DELAY = 100;
-const int MAX_STEP_DELAY = 500;
+const int MIN_STEP_DELAY = 50;
+const int MAX_STEP_DELAY = 100;
 const int DEFAULT_STEPS = 100;
 const int RESET_ANGLE = 90;
 const int SERVO1_MIN_ANGLE = 0;
@@ -16,7 +17,6 @@ const int SERVO1_MAX_ANGLE = 95;
 const int SERVO2_MIN_ANGLE = 0;
 const int SERVO2_MAX_ANGLE = 180;
 const int SERIAL_TIMEOUT = 1000;
-const int MAX_STEPS = 20000;
 
 // Servo motors
 Servo servo1;
@@ -26,6 +26,7 @@ int angle2 = RESET_ANGLE;
 
 // Stepper motor control variables
 int currentSteps = 0;
+int dir = 0;
 
 // Command structure
 struct Command {
@@ -59,7 +60,7 @@ Command parseCommand() {
   // Check for valid data format
   if (data.length() == 0 || firstComma == -1 || secondComma == -1) {
     Serial.println("Error: Invalid command format");
-    return {0, 0, 0}; // Return a default error command
+    return Command(); // Return a default error command
   }
 
   parsedCommand.x = data.substring(0, firstComma).toInt();
@@ -76,20 +77,24 @@ void moveBracket(int deltaX, int deltaY) {
   angle2 = min(max(angle2 + deltaY, SERVO2_MIN_ANGLE), SERVO2_MAX_ANGLE);
   servo1.write(angle1);
   servo2.write(angle2);
+  delay(120);
 }
 
 void moveRail(int distance, int velocityPercent) {
   // Move stepper motor
-  int dir = distance > 0 ? 1 : -1;
+  int nowDir = distance > 0 ? 1 : -1;
+  if(nowDir != dir){
+    dir = nowDir;
+    digitalWrite(DIR_PIN, nowDir > 0 ? HIGH : LOW);
+  }
   int delayPerStep =
       map(velocityPercent, 0, 100, MAX_STEP_DELAY, MIN_STEP_DELAY);
   int nextSteps = currentSteps + distance;
-  if (nextSteps < 0 || nextSteps > MAX_STEPS) {
-    // If the stepper motor will exceed its range, do nothing
-    return;
-  }
-  digitalWrite(DIR_PIN, distance > 0 ? HIGH : LOW);
-  for (; currentSteps != nextSteps; currentSteps += dir) {
+  // if (nextSteps < 0 || nextSteps > MAX_STEPS) {
+  //   // If the stepper motor will exceed its range, do nothing
+  //   return;
+  // }
+  for (; currentSteps != nextSteps; currentSteps += nowDir) {
     digitalWrite(STEP_PIN, HIGH);
     delayMicroseconds(delayPerStep);
     digitalWrite(STEP_PIN, LOW);
@@ -100,7 +105,7 @@ void moveRail(int distance, int velocityPercent) {
 void resetAll() {
   // Reset servo angles and stepper position
   moveBracket(RESET_ANGLE - angle1, RESET_ANGLE - angle2);
-  moveRail(-currentSteps, 100);
+  moveRail(0, 100);
 }
 
 void executeCommand(Command command) {
@@ -111,8 +116,9 @@ void executeCommand(Command command) {
   case 2: // Stepper movement mode
     moveRail(command.x, command.y);
     break;
-  default: // Reset servo angles and stepper position
+  case 3:
     resetAll();
+  default: // Reset servo angles and stepper position
     break;
   }
 }
@@ -132,10 +138,9 @@ void loop() {
     Serial.println("x: " + String(command.x) + " y: " + String(command.y) +
                    " mode: " + String(command.mode));
     executeCommand(command);
-    clearBuffer();
     return;
   }
-
-  // If no command is received, use the last command
-  executeCommand(command);
+  if(command.mode == 2){
+    moveRail(command.x, command.y);
+  }
 }

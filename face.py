@@ -70,7 +70,7 @@ class FaceDetector:
                 elif self.track and distance <= self.target_boundary:
                     self.track = False
                 # if object is in between the two circles and mode is 2
-                if self.track is False and distance <= self.center_boundary:
+                if self.track == False and distance <= self.center_boundary:
                     cv2.circle(
                         frame, (center_x, center_y), 90, (255, 0, 0), 1
                     )
@@ -90,6 +90,10 @@ class FaceDetector:
             elif mode == "rail":
                 distance = center_x - target_center_x
                 velocity_percentage = round(abs(distance) / center_x * 100)
+                
+                if abs(distance) < 10:
+                    distance = 0
+                
                 controller.rail(distance, velocity_percentage)
                 print(
                     f"- [RAIL] Distance: {distance}, Velocity: {velocity_percentage}%"
@@ -108,7 +112,7 @@ if __name__ == "__main__":
         )
     )
     # Open the video file
-    cap = cv2.VideoCapture(4)  # Replace with the path to your video file
+    cap = cv2.VideoCapture(0)  # Replace with the path to your video file
     controller = ArduinoController()
 
     while True:

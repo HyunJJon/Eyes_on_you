@@ -53,7 +53,7 @@ class ArduinoController:
 
     def reset(self) -> None:
         # reset all the servos to 90 degrees, and stepper to 0
-        string = "0,0,0\n"
+        string = "0,0,3\n"
         self.ser.write(string.encode())
         print(f"[ARDUINO]: send reset '{string}'")
         time.sleep(self.send_delay)
