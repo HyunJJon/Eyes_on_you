@@ -2,8 +2,8 @@
 
 from enum import IntEnum
 from functools import cached_property
-from pathlib import Path
 from typing import List, Tuple
+from typing import Set as set
 
 import cv2
 import keras
@@ -79,9 +79,8 @@ class Detector:
         # Initialize the webcam for Hand Gesture Recognition Python project
         self.cap = cv2.VideoCapture(cam_id)
         assert self.cap.isOpened(), "Cannot open webcam"
-
         # Load the gesture recognizer model
-        self.model = load_model(Path(__file__).parent / hand_model_name)  # type: ignore
+        self.model = load_model(hand_model_name)  # type: ignore
         x, y, _ = self.xyc
         self.controller = ArduinoController(width=x, height=y)
 
@@ -94,6 +93,7 @@ class Detector:
             min_tracking_confidence=min_tracking_confidence,
         )
         self.face_detector = FaceDetector(model=face_model)
+        self.mode = "bracket"
 
         # Convert allowed gestures to their corresponding indices
         self.allowed_indices = np.array(
@@ -149,8 +149,10 @@ class Detector:
             # 프레임을 읽어온다.
             frame_bgr = self.frame_bgr
             frame_rgb = cv2.flip(frame_bgr, 1)
-
-            self.face_detector.run(frame_bgr, self.controller)
+            if self.mode == "bracket":
+                self.face_detector.run(frame_bgr, self.controller, "bracket")
+            elif self.mode == "rail":
+                self.face_detector.run(frame_bgr, self.controller, "rail")
 
             # 손의 랜드마크를 인식한다.
             hand_landmarks = self.hands.process(
@@ -256,6 +258,7 @@ class Detector:
         for finger_id in (Hand.THUMB_TIP,):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
+            self.mode = "rail"
 
     def thumbs_down_callback(
         self, frame: np.ndarray, landmarks: List[int]
@@ -264,6 +267,7 @@ class Detector:
         for finger_id in (Hand.THUMB_TIP,):
             finger_x, finger_y = self.get_x_y_of_finger(landmarks, finger_id)
             cv2.circle(frame, (finger_x, finger_y), 10, (255, 0, 0), -1)
+            self.mode = "bracket"
             # self.controller.send_x_y(finger_x, finger_y)
 
     def stop_callback(self, frame: np.ndarray, landmarks: List[int]) -> None:

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "xutility": "cpp",
+        "chrono": "cpp",
+        "*.inc": "cpp"
+    }
+}

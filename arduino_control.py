@@ -5,6 +5,8 @@ from typing import List
 import serial
 import time
 
+mode: dict = {"bracket": 1, "rail": 2}
+
 
 @dataclass
 class ArduinoController:
@@ -44,13 +46,28 @@ class ArduinoController:
     def __del__(self) -> None:
         self.ser.close()
 
-    def stop(self) -> None:
-        # move to forward view and stop
-        encoded = "-2, -2".encode()
-        self.ser.write(encoded)
+    def read(self):
+        if self.ser.in_waiting > 0:
+            data = self.ser.readline().decode("utf-8").strip()
+            print(f"[ARDUINO]: read '{data}")
 
-    def send_x_y(self, x: float, y: float) -> None:
-        string = f"{x:.2f},{y:.2f}\n"
+    def reset(self) -> None:
+        # reset all the servos to 90 degrees, and stepper to 0
+        string = "0,0,0\n"
+        self.ser.write(string.encode())
+        print(f"[ARDUINO]: send reset '{string}'")
+        time.sleep(self.send_delay)
+
+    def bracket(self, delta_x: float, delta_y: float) -> None:
+        string = f"{int(delta_x)},{int(delta_y)},{int(mode['bracket'])}\n"
+        # input = delta_x, delta_y, 1
         self.ser.write(string.encode())
         print(f"[ARDUINO]: send x and y '{string}'")
+        time.sleep(self.send_delay)  # Delay between sends
+
+    def rail(self, distance: float, velocity_percentage: float) -> None:
+        string = f"{int(distance)},{int(velocity_percentage)},{int(mode['rail'])}\n"  # noqa: E501
+        # input = direction, velocity_percentage, 2
+        self.ser.write(string.encode())
+        print(f"[ARDUINO]: send distance and velocity percentage '{string}'")
         time.sleep(self.send_delay)  # Delay between sends

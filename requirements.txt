@@ -12,3 +12,4 @@ pyyaml
 pandas
 seaborn
 thop
+mediapipe
