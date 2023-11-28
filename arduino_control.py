@@ -31,16 +31,20 @@ class ArduinoController:
         return ports
 
     def __post_init__(self) -> None:
+        success = False
         for port in [self.port] + self.possible_ports():
             try:
                 self.ser = serial.Serial(
                     port, self.baudrate, timeout=1, write_timeout=1
                 )
                 print(f"[ARDUINO] Connected to {port}")
+                success = True
                 break
             except (OSError, serial.SerialException):
                 print(f"[ARDUINO] Failed to connect to {port}")
         time.sleep(2)  # Wait for Arduino to boot
+        if not success:
+            raise ConnectionError("Failed to connect to Arduino")
         print("[ARDUINO] Arduino ready!")
 
     def __del__(self) -> None:

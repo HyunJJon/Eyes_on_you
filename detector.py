@@ -2,8 +2,7 @@
 
 from enum import IntEnum
 from functools import cached_property
-from typing import List, Tuple
-from typing import Set as set
+from typing import List, Tuple, Set
 
 import cv2
 import keras
@@ -61,7 +60,7 @@ class Detector:
             min_face=10,
         ),
         hand_model_name: str = "mp_hand_gesture",
-        allowed_gestures: set[str] = {
+        allowed_gestures: Set[str] = {
             "stop",
             "thumbs up",
             "thumbs down",
@@ -77,8 +76,17 @@ class Detector:
         min_tracking_confidence: float = 0.5,
     ):
         # Initialize the webcam for Hand Gesture Recognition Python project
-        self.cap = cv2.VideoCapture(cam_id)
-        assert self.cap.isOpened(), "Cannot open webcam"
+        success = False
+        for i in set([cam_id] + list(range(256))):
+            self.cap = cv2.VideoCapture(i)
+            if self.cap.isOpened():
+                print(f"[DETECTOR] Opened webcam {i} successfully")
+                success = True
+                break
+            else:
+                print(f"[DETECTOR] Failed to open webcam {i}")
+        if not success:
+            raise ConnectionError("Cannot open webcam")
         # Load the gesture recognizer model
         self.model = load_model(hand_model_name)  # type: ignore
         x, y, _ = self.xyc
@@ -153,7 +161,7 @@ class Detector:
                 self.face_detector.run(frame_bgr, self.controller, "bracket")
             elif self.mode == "rail":
                 self.face_detector.run(frame_bgr, self.controller, "rail")
-            
+
             self.controller.read()
 
             # 손의 랜드마크를 인식한다.
